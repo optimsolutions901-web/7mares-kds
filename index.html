@@ -764,17 +764,22 @@ async function fetchOrders() {
         timestamp: (() => {
           const cell = r[COL.TIMESTAMP];
           if (!cell) return new Date();
-          // Google Sheets gviz returns Date(year,month,day,h,m,s) string
-          if (typeof cell.v === 'string' && cell.v.includes('Date(')) {
-            const p = cell.v.match(/Date\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)/);
-            if (p) return new Date(parseInt(p[1]), parseInt(p[2]), parseInt(p[3]), parseInt(p[4]), parseInt(p[5]), parseInt(p[6]));
-          }
-          // Sometimes it's a numeric serial (days since Dec 30 1899)
-          if (typeof cell.v === 'number') {
-            const ms = (cell.v - 25569) * 86400000;
+          const v = cell.v;
+          // gviz returns numeric serial: days since Dec 30 1899 (with fractional day = time)
+          if (typeof v === 'number') {
+            // Convert Google serial to MS: subtract epoch offset, convert days to ms
+            // Google epoch: Dec 30 1899. JS epoch: Jan 1 1970. Diff = 25569 days
+            const ms = (v - 25569) * 86400 * 1000;
             return new Date(ms);
           }
-          return new Date(cell.v);
+          // Sometimes returns Date(y,m,d,h,min,s) string
+          if (typeof v === 'string' && v.includes('Date(')) {
+            const p = v.match(/Date\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)/);
+            if (p) return new Date(parseInt(p[1]), parseInt(p[2]), parseInt(p[3]), parseInt(p[4]), parseInt(p[5]), parseInt(p[6]));
+          }
+          // Try formatted string e.g. "3/5/2026 18:22:00"
+          if (cell.f) return new Date(cell.f);
+          return new Date();
         })(),
         orderNum:  shortOrderNum,
         customer:  r[COL.CUSTOMER]?.v   || 'Guest',
@@ -874,7 +879,7 @@ function renderCards(orders) {
           <div class="order-num age-${age}">#${order.orderNum}</div>
           <div class="order-source">TAKE OUT</div>
         </div>
-        <div class="timer-badge age-${age}" data-timestamp="${order.timestamp.getTime ? order.timestamp.getTime() : Date.now()}" id="timer-${order.id}">⏱ ${ageLabel}</div>
+        <div class="timer-badge age-${age}" data-timestamp="${order.timestamp instanceof Date && !isNaN(order.timestamp) ? order.timestamp.getTime() : Date.now() - (ageMin * 60000)}" id="timer-${order.id}">⏱ ${ageLabel}</div>
       </div>
       <div class="card-body">
         <div class="customer-row">
