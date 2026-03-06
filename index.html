@@ -761,7 +761,21 @@ async function fetchOrders() {
       orders.push({
         rowIndex:  i + 1,
         id:        String(orderId),
-        timestamp: r[COL.TIMESTAMP]?.v ? new Date(r[COL.TIMESTAMP].f || r[COL.TIMESTAMP].v) : new Date(),
+        timestamp: (() => {
+          const cell = r[COL.TIMESTAMP];
+          if (!cell) return new Date();
+          // Google Sheets gviz returns Date(year,month,day,h,m,s) string
+          if (typeof cell.v === 'string' && cell.v.includes('Date(')) {
+            const p = cell.v.match(/Date\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)/);
+            if (p) return new Date(parseInt(p[1]), parseInt(p[2]), parseInt(p[3]), parseInt(p[4]), parseInt(p[5]), parseInt(p[6]));
+          }
+          // Sometimes it's a numeric serial (days since Dec 30 1899)
+          if (typeof cell.v === 'number') {
+            const ms = (cell.v - 25569) * 86400000;
+            return new Date(ms);
+          }
+          return new Date(cell.v);
+        })(),
         orderNum:  shortOrderNum,
         customer:  r[COL.CUSTOMER]?.v   || 'Guest',
         phone:     r[COL.PHONE]?.v      || '',
