@@ -1,81 +1,1094 @@
-function doPost(e) {
-  try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getActiveSheet();
-    var data = JSON.parse(e.postData.contents);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>7 Mares KDS</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #C0392B;
+    --red-dark: #922B21;
+    --green: #1E8449;
+    --green-light: #27AE60;
+    --yellow: #D4AC0D;
+    --orange: #CA6F1E;
+    --bg: #0D1117;
+    --surface: #161B22;
+    --surface2: #21262D;
+    --border: #30363D;
+    --text: #E6EDF3;
+    --text-muted: #8B949E;
+    --new: #1E8449;
+    --warn: #CA6F1E;
+    --urgent: #C0392B;
+  }
 
-    var custom = data.customData || {};
-    var order = data.order || {};
-    var lineItemsArr = order.line_items || [];
-    var customer = order.customer || {};
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-    // Build line items string
-    var itemsList = lineItemsArr.map(function(item) {
-      return item.title + " x" + item.quantity;
-    }).join(", ");
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
 
-    // Get order ID from line_items meta
-    var orderId = "";
-    if (lineItemsArr.length > 0 && lineItemsArr[0].meta) {
-      orderId = lineItemsArr[0].meta.order_id || "";
-    }
+  /* ── LOGIN ─────────────────────────────────────────────────────── */
+  #login-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: var(--bg);
+    position: relative;
+    overflow: hidden;
+  }
 
-    // Customer info
-    var customerName = custom.customer_name || data.full_name || customer.name || "";
-    var customerPhone = custom.customer_phone || data["Billing Address - Phone Number"] || "";
+  #login-screen::before {
+    content: '';
+    position: absolute;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(192,57,43,0.15) 0%, transparent 70%);
+    top: -100px; left: -100px;
+    pointer-events: none;
+  }
 
-    // Pickup info
-    var pickupTime = custom.pickup_time || "";
-    var time = custom.time || (data["Pick a Time"] ? data["Pick a Time"][0] : "") || "";
-    var date = custom.date || data["Choose your Day"] || "";
+  #login-screen::after {
+    content: '';
+    position: absolute;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(30,132,73,0.1) 0%, transparent 70%);
+    bottom: -50px; right: -50px;
+    pointer-events: none;
+  }
 
-    // Notes and mods
-    var notes = custom.notes || data["Special Requests"] || "";
-    var mods = custom.mods || "";
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 48px 40px;
+    width: 100%;
+    max-width: 400px;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+  }
 
-    var newRow = sheet.getLastRow() + 1;
+  .login-logo {
+    text-align: center;
+    margin-bottom: 32px;
+  }
 
-    // Write timestamp with full date AND time
-    var now = new Date();
-    sheet.getRange(newRow, 1).setValue(now);
-    sheet.getRange(newRow, 1).setNumberFormat('M/d/yyyy H:mm:ss');
+  .login-logo .brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px;
+    color: var(--red);
+    letter-spacing: 3px;
+    line-height: 1;
+  }
 
-    sheet.getRange(newRow, 2).setValue(orderId);
-    sheet.getRange(newRow, 3).setValue(customerName);
-    sheet.getRange(newRow, 4).setValue(customerPhone);
-    sheet.getRange(newRow, 5).setValue(pickupTime);
-    sheet.getRange(newRow, 6).setValue(itemsList);
-    sheet.getRange(newRow, 7).setValue(notes);
-    sheet.getRange(newRow, 8).setValue(mods);
-    sheet.getRange(newRow, 9).setValue(time);
-    sheet.getRange(newRow, 10).setValue(date);
-    sheet.getRange(newRow, 11).setValue("🔴 NEW");
+  .login-logo .sub {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
 
-    // Formatting
-    sheet.getRange(newRow, 1, 1, 11)
-      .setFontSize(13)
-      .setFontWeight("bold")
-      .setVerticalAlignment("middle");
+  .login-divider {
+    width: 40px;
+    height: 3px;
+    background: var(--red);
+    margin: 16px auto;
+    border-radius: 2px;
+  }
 
-    sheet.getRange(newRow, 1, 1, 11).setBackground("#FFF176");
-    sheet.getRange(newRow, 6).setWrap(true);
-    sheet.getRange(newRow, 7).setWrap(true);
-    sheet.getRange(newRow, 8).setWrap(true);
-    sheet.setRowHeight(newRow, 80);
+  .field-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
 
-    return ContentService
-      .createTextOutput(JSON.stringify({status: "success", received: data}))
-      .setMimeType(ContentService.MimeType.JSON);
+  .login-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 15px;
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    margin-bottom: 20px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
 
-  } catch(err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({status: "error", message: err.toString()}))
-      .setMimeType(ContentService.MimeType.JSON);
+  .login-input:focus {
+    border-color: var(--red);
+  }
+
+  .login-btn {
+    width: 100%;
+    background: var(--red);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .login-btn:hover { background: var(--red-dark); }
+  .login-btn:active { transform: scale(0.98); }
+
+  .login-error {
+    background: rgba(192,57,43,0.15);
+    border: 1px solid rgba(192,57,43,0.4);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #E74C3C;
+    margin-bottom: 20px;
+    display: none;
+  }
+
+  /* ── KDS APP ────────────────────────────────────────────────────── */
+  #kds-app { display: none; flex-direction: column; min-height: 100vh; }
+
+  /* Top bar */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    flex-shrink: 0;
+  }
+
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .topbar-brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    color: var(--red);
+    letter-spacing: 2px;
+  }
+
+  .topbar-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-left: 1px solid var(--border);
+    padding-left: 16px;
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .live-dot {
+    width: 8px; height: 8px;
+    background: var(--green-light);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .live-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--green-light);
+    letter-spacing: 1px;
+  }
+
+  .order-count {
+    background: var(--red);
+    color: white;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 4px 12px;
+    border-radius: 20px;
+    min-width: 32px;
+    text-align: center;
+  }
+
+  .logout-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+  }
+  .logout-btn:hover { border-color: var(--red); color: var(--red); }
+
+  .refresh-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+  }
+  .refresh-btn:hover { border-color: var(--green-light); color: var(--green-light); }
+
+  /* Last updated */
+  .last-updated {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* Status bar */
+  .statusbar {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .pill-new    { background: rgba(30,132,73,0.2);  color: #2ECC71; border: 1px solid rgba(30,132,73,0.4); }
+  .pill-warn   { background: rgba(202,111,30,0.2); color: #E67E22; border: 1px solid rgba(202,111,30,0.4); }
+  .pill-urgent { background: rgba(192,57,43,0.2);  color: #E74C3C; border: 1px solid rgba(192,57,43,0.4); }
+
+  .pill-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .pill-new .pill-dot    { background: #2ECC71; }
+  .pill-warn .pill-dot   { background: #E67E22; }
+  .pill-urgent .pill-dot { background: #E74C3C; }
+
+  /* Cards grid */
+  .cards-container {
+    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+
+  /* Empty state */
+  .empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 80px 20px;
+  }
+
+  .empty-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+  }
+
+  .empty-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .empty-sub {
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  /* Order card */
+  .order-card {
+    background: var(--surface);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: transform 0.2s, box-shadow 0.2s;
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .order-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  .order-card.age-new    { border-top: 4px solid var(--green-light); }
+  .order-card.age-warn   { border-top: 4px solid #E67E22; }
+  .order-card.age-urgent { border-top: 4px solid #E74C3C; animation: urgentPulse 1.5s infinite; }
+
+  @keyframes urgentPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(192,57,43,0); }
+    50%       { box-shadow: 0 0 0 6px rgba(192,57,43,0.2); }
+  }
+
+  /* Card header */
+  .card-header {
+    padding: 14px 16px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .card-header.age-new    { background: rgba(30,132,73,0.12); }
+  .card-header.age-warn   { background: rgba(202,111,30,0.12); }
+  .card-header.age-urgent { background: rgba(192,57,43,0.15); }
+
+  .order-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: 1px;
+    line-height: 1;
+  }
+
+  .order-num.age-new    { color: #2ECC71; }
+  .order-num.age-warn   { color: #E67E22; }
+  .order-num.age-urgent { color: #E74C3C; }
+
+  .order-source {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .timer-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .timer-badge.age-new    { background: rgba(30,132,73,0.2);  color: #2ECC71; }
+  .timer-badge.age-warn   { background: rgba(202,111,30,0.2); color: #E67E22; }
+  .timer-badge.age-urgent { background: rgba(192,57,43,0.2);  color: #E74C3C; }
+
+  /* Card body */
+  .card-body { padding: 14px 16px; }
+
+  .customer-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .customer-avatar {
+    width: 34px; height: 34px;
+    background: var(--surface2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 13px;
+    color: var(--red);
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+  }
+
+  .customer-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .customer-phone {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .items-list { margin-bottom: 12px; }
+
+  .item-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .item-row:last-child { border-bottom: none; }
+
+  .item-dot {
+    width: 6px; height: 6px;
+    background: var(--red);
+    border-radius: 50%;
+    margin-top: 6px;
+    flex-shrink: 0;
+  }
+
+  .item-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .notes-box {
+    background: rgba(212,172,13,0.1);
+    border: 1px solid rgba(212,172,13,0.3);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 10px;
+  }
+
+  .notes-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #D4AC0D;
+    margin-bottom: 3px;
+  }
+
+  .notes-text {
+    font-size: 12px;
+    color: #F0C040;
+    line-height: 1.4;
+  }
+
+  .pickup-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 14px;
+    padding: 8px 10px;
+    background: var(--surface2);
+    border-radius: 6px;
+  }
+
+  .pickup-icon { font-size: 14px; }
+
+  .pickup-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .pickup-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Done button */
+  .done-btn {
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .done-btn.age-new    { background: var(--green-light); color: white; }
+  .done-btn.age-warn   { background: #E67E22; color: white; }
+  .done-btn.age-urgent { background: #E74C3C; color: white; }
+
+  .done-btn:hover { opacity: 0.85; transform: scale(0.99); }
+  .done-btn:active { transform: scale(0.97); }
+
+  /* Loading overlay */
+  .loading-overlay {
+    position: fixed; inset: 0;
+    background: rgba(13,17,23,0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    backdrop-filter: blur(4px);
+  }
+
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--red);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Confirm notification modal */
+  .confirm-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+    backdrop-filter: blur(6px);
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+  .confirm-box {
+    background: var(--surface);
+    border: 2px solid var(--green-light);
+    border-radius: 20px;
+    padding: 40px 48px;
+    text-align: center;
+    max-width: 380px;
+    width: 90%;
+    box-shadow: 0 0 60px rgba(39,174,96,0.3);
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  @keyframes popIn {
+    from { opacity:0; transform: scale(0.8); }
+    to   { opacity:1; transform: scale(1); }
+  }
+
+  .confirm-icon {
+    font-size: 56px;
+    margin-bottom: 16px;
+    animation: ring 0.6s ease infinite alternate;
+  }
+
+  @keyframes ring {
+    from { transform: rotate(-15deg); }
+    to   { transform: rotate(15deg); }
+  }
+
+  .confirm-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    color: var(--green-light);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .confirm-sub {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 28px;
+  }
+
+  .confirm-btn {
+    background: var(--green-light);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 16px 40px;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+    width: 100%;
+  }
+
+  .confirm-btn:hover { background: #219a52; transform: scale(0.99); }
+  .confirm-btn:active { transform: scale(0.96); }
+
+  /* New order flash */
+  .new-order-flash {
+    position: fixed;
+    top: 70px; right: 20px;
+    background: var(--green-light);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    z-index: 200;
+    animation: flashIn 0.3s ease, flashOut 0.3s ease 2.7s forwards;
+    box-shadow: 0 4px 20px rgba(39,174,96,0.4);
+  }
+
+  @keyframes flashIn  { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes flashOut { to   { opacity:0; transform:translateY(-10px); } }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .cards-container { grid-template-columns: 1fr; padding: 12px; }
+    .topbar-label { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ──────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="brand">7 Mares</div>
+      <div class="sub">Kitchen Display System</div>
+      <div class="login-divider"></div>
+    </div>
+    <div class="login-error" id="login-error">Incorrect username or password.</div>
+    <div class="field-label">Username</div>
+    <input class="login-input" id="username" type="text" placeholder="Enter username" autocomplete="off" autocapitalize="none">
+    <div class="field-label">Password</div>
+    <input class="login-input" id="password" type="password" placeholder="Enter password">
+    <button class="login-btn" onclick="doLogin()">Sign In →</button>
+  </div>
+</div>
+
+<!-- ── KDS APP ────────────────────────────────────────────────────────── -->
+<div id="kds-app">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-brand">7 Mares</div>
+      <div class="topbar-label">Kitchen Display</div>
+    </div>
+    <div class="topbar-right">
+      <div class="live-dot"></div>
+      <span class="live-text">LIVE</span>
+      <span class="order-count" id="order-count">0</span>
+      <span class="last-updated" id="last-updated">--</span>
+      <button class="refresh-btn" onclick="fetchOrders()">↻ Refresh</button>
+      <button class="logout-btn" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- Status bar -->
+  <div class="statusbar">
+    <div class="status-pill pill-new"><div class="pill-dot"></div> 0–15 min</div>
+    <div class="status-pill pill-warn"><div class="pill-dot"></div> 15–30 min</div>
+    <div class="status-pill pill-urgent"><div class="pill-dot"></div> 30+ min URGENT</div>
+  </div>
+
+  <!-- Cards -->
+  <div class="cards-container" id="cards-container">
+    <div class="empty-state">
+      <div class="empty-icon">🍽️</div>
+      <div class="empty-title">No Active Orders</div>
+      <div class="empty-sub">New orders will appear here automatically</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- New Order Confirm Modal -->
+<div class="confirm-overlay" id="confirm-modal" style="display:none;">
+  <div class="confirm-box">
+    <div class="confirm-icon">🔔</div>
+    <div class="confirm-title">Nueva Orden!</div>
+    <div class="confirm-sub">Se ha recibido una nueva orden</div>
+    <button class="confirm-btn" onclick="dismissConfirm()">✓ Confirmar Orden</button>
+  </div>
+</div>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loading" style="display:none;">
+  <div class="spinner"></div>
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────
+const SHEET_ID  = '1p2r6OLPr2tFQzFKx-VgLaoo0-r5LsmisdWYN3HGa_BI';
+const SHEET_TAB = 'Sheet1';
+const REFRESH_MS = 15000; // 15 seconds
+
+const USERS = {
+  '7mares': '7MARES123'
+};
+
+// Column indices (0-based) matching your sheet:
+// Timestamp(0) Order#(1) Customer(2) Phone(3) PickupTime(4) Items(5) Notes(6) Mods(7) Time(8) Status(9)
+const COL = {
+  TIMESTAMP: 0, ORDER_NUM: 1, CUSTOMER: 2, PHONE: 3,
+  PICKUP: 4, ITEMS: 5, NOTES: 6, MODS: 7,
+  TIME: 8, DATE: 9, STATUS: 10
+};
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+let loggedIn      = false;
+let knownOrders   = new Set();
+let refreshTimer  = null;
+let doneOrders    = new Set(JSON.parse(localStorage.getItem('doneOrders') || '[]'));
+
+// ── LOGIN ─────────────────────────────────────────────────────────────────
+document.getElementById('password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+function doLogin() {
+  const u = document.getElementById('username').value.trim().toLowerCase();
+  const p = document.getElementById('password').value.trim();
+  if (USERS[u] && USERS[u] === p) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('kds-app').style.display = 'flex';
+    loggedIn = true;
+    fetchOrders();
+    refreshTimer = setInterval(fetchOrders, REFRESH_MS);
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+    document.getElementById('password').value = '';
   }
 }
 
-function doGet(e) {
-  return ContentService
-    .createTextOutput("KDS Webhook is live.")
-    .setMimeType(ContentService.MimeType.TEXT);
+function doLogout() {
+  clearInterval(refreshTimer);
+  loggedIn = false;
+  document.getElementById('kds-app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('username').value = '';
+  document.getElementById('password').value = '';
 }
+
+// ── FETCH ORDERS FROM GOOGLE SHEET ────────────────────────────────────────
+async function fetchOrders() {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_TAB)}`;
+  try {
+    const res  = await fetch(url);
+    const text = await res.text();
+    const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
+    const rows = json.table.rows;
+
+    const orders = [];
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i].c;
+      if (!r) continue;
+      const status = r[COL.STATUS]?.v || '';
+      // Skip done orders
+      if (String(status).toUpperCase().includes('DONE')) continue;
+      const orderId = r[COL.ORDER_NUM]?.v || r[COL.TIMESTAMP]?.v || i;
+      if (doneOrders.has(String(orderId))) continue;
+
+      // Keep full order ID for deduplication only
+      const rawOrderNum = r[COL.ORDER_NUM]?.v || '';
+
+      // Fix time - Google Sheets returns Date(1899,...) for time values
+      const rawTime = r[COL.TIME]?.v || '';
+      let cleanTime = rawTime;
+      if (typeof rawTime === 'string' && rawTime.includes('Date(')) {
+        const parts = rawTime.match(/Date\((\d+),(\d+),(\d+),(\d+),(\d+)/);
+        if (parts) {
+          let h = parseInt(parts[4]);
+          const m = parseInt(parts[5]);
+          const ampm = h >= 12 ? 'PM' : 'AM';
+          h = h % 12 || 12;
+          cleanTime = h + ':' + m.toString().padStart(2,'0') + ' ' + ampm;
+        }
+      }
+
+      orders.push({
+        rowIndex:  i + 1,
+        id:        String(orderId),
+        timestamp: (() => {
+          const cell = r[COL.TIMESTAMP];
+          if (!cell) return new Date();
+          const v = cell.v;
+          // gviz returns numeric serial: days since Dec 30 1899 (with fractional day = time)
+          if (typeof v === 'number') {
+            // Convert Google serial to MS: subtract epoch offset, convert days to ms
+            // Google epoch: Dec 30 1899. JS epoch: Jan 1 1970. Diff = 25569 days
+            const ms = (v - 25569) * 86400 * 1000;
+            return new Date(ms);
+          }
+          // Sometimes returns Date(y,m,d,h,min,s) string
+          if (typeof v === 'string' && v.includes('Date(')) {
+            const p = v.match(/Date\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)/);
+            if (p) return new Date(parseInt(p[1]), parseInt(p[2]), parseInt(p[3]), parseInt(p[4]), parseInt(p[5]), parseInt(p[6]));
+          }
+          // Try formatted string e.g. "3/5/2026 18:22:00"
+          if (cell.f) return new Date(cell.f);
+          return new Date();
+        })(),
+        orderNum:  rawOrderNum,
+        customer:  r[COL.CUSTOMER]?.v   || 'Guest',
+        phone:     r[COL.PHONE]?.v      || '',
+        pickup:    r[COL.PICKUP]?.v     || '',
+        items:     r[COL.ITEMS]?.v      || '',
+        notes:     r[COL.NOTES]?.v      || '',
+        mods:      r[COL.MODS]?.v       || '',
+        time:      cleanTime,
+        date:      r[COL.DATE]?.v       || '',
+        status:    status,
+      });
+    }
+
+    // Detect new orders
+    let hasNew = false;
+    orders.forEach(o => {
+      if (!knownOrders.has(o.id)) {
+        if (knownOrders.size > 0) hasNew = true;
+        knownOrders.add(o.id);
+      }
+    });
+
+    if (hasNew) {
+      playAlert();
+      showConfirmModal();
+    }
+
+    renderCards(orders);
+
+    // Update last refreshed time
+    const now = new Date();
+    document.getElementById('last-updated').textContent =
+      `Updated ${now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+
+  } catch (err) {
+    console.error('Fetch error:', err);
+  }
+}
+
+// ── RENDER ORDER CARDS ────────────────────────────────────────────────────
+function renderCards(orders) {
+  const container = document.getElementById('cards-container');
+  document.getElementById('order-count').textContent = orders.length;
+
+  if (orders.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">✅</div>
+        <div class="empty-title">All Clear!</div>
+        <div class="empty-sub">No active orders right now</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = '';
+  orders.forEach(order => {
+    const ageMin = (order.timestamp && !isNaN(order.timestamp)) ? (Date.now() - order.timestamp) / 60000 : 0;
+    const age    = ageMin < 15 ? 'new' : ageMin < 30 ? 'warn' : 'urgent';
+    const ageLabel = 'Just now'; // will be updated by live timer
+
+    const initials = order.customer.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) || '?';
+
+    // Parse items — could be comma separated or JSON-ish
+    let itemsHtml = '';
+    if (order.items) {
+      const itemList = String(order.items).split(/[,\n]+/).filter(Boolean);
+      itemsHtml = itemList.map(item =>
+        `<div class="item-row">
+          <div class="item-dot"></div>
+          <div class="item-name">${item.trim()}</div>
+        </div>`
+      ).join('');
+    }
+
+    const notesHtml = (order.notes || order.mods) ? `
+      <div class="notes-box">
+        <div class="notes-label">⚠ Notes / Mods</div>
+        <div class="notes-text">${[order.notes, order.mods].filter(Boolean).join(' • ')}</div>
+      </div>` : '';
+
+    const pickupHtml = (order.pickup || order.time || order.date) ? `
+      <div class="pickup-row">
+        <div class="pickup-icon">🕐</div>
+        <div>
+          <div class="pickup-label">Pickup</div>
+          <div class="pickup-text">${[order.pickup, order.time, order.date].filter(Boolean).join(' ')}</div>
+        </div>
+      </div>` : '';
+
+    const card = document.createElement('div');
+    card.className = `order-card age-${age}`;
+    card.id = `card-${order.id}`;
+    card.innerHTML = `
+      <div class="card-header age-${age}">
+        <div>
+          <div class="order-num age-${age}">${order.customer}</div>
+          <div class="order-source">TAKE OUT</div>
+        </div>
+        <div class="timer-badge age-${age}" data-timestamp="${order.timestamp instanceof Date && !isNaN(order.timestamp) ? order.timestamp.getTime() : Date.now() - (ageMin * 60000)}" id="timer-${order.id}">⏱ ${ageLabel}</div>
+      </div>
+      <div class="card-body">
+        <div class="customer-row">
+          <div class="customer-avatar">${initials}</div>
+          <div>
+            <div class="customer-name">${order.customer}</div>
+            <div class="customer-phone">${order.phone}</div>
+          </div>
+        </div>
+        ${itemsHtml ? `<div class="section-label">Items</div><div class="items-list">${itemsHtml}</div>` : ''}
+        ${notesHtml}
+        ${pickupHtml}
+        <button class="done-btn age-${age}" onclick="markDone('${order.id}', '${order.customer}')">
+          ✓ Mark Done
+        </button>
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
+// ── MARK ORDER DONE ───────────────────────────────────────────────────────
+function markDone(orderId, customerName) {
+  const card = document.getElementById(`card-${orderId}`);
+  if (card) {
+    card.style.transition = 'all 0.3s ease';
+    card.style.opacity = '0';
+    card.style.transform = 'scale(0.95)';
+    setTimeout(() => card.remove(), 300);
+  }
+
+  doneOrders.add(String(orderId));
+  localStorage.setItem('doneOrders', JSON.stringify([...doneOrders]));
+  knownOrders.delete(String(orderId));
+
+  // Update count
+  const countEl = document.getElementById('order-count');
+  countEl.textContent = Math.max(0, parseInt(countEl.textContent) - 1);
+
+  showFlash(`✅ ${customerName} — Order complete`);
+}
+
+// ── AUDIO ALERT ───────────────────────────────────────────────────────────
+function playAlert() {
+  try {
+    // Play beep first
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 150, 300].forEach(delay => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.4, ctx.currentTime + delay/1000);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay/1000 + 0.25);
+      osc.start(ctx.currentTime + delay/1000);
+      osc.stop(ctx.currentTime + delay/1000 + 0.25);
+    });
+    // Then speak in Spanish after short delay
+    setTimeout(() => {
+      const msg = new SpeechSynthesisUtterance('Nueva orden recibida');
+      msg.lang = 'es-MX';
+      msg.rate = 0.9;
+      msg.pitch = 1;
+      msg.volume = 1;
+      window.speechSynthesis.speak(msg);
+    }, 500);
+  } catch(e) {}
+}
+
+// ── LIVE TIMER ───────────────────────────────────────────────────────────
+function formatAge(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return h + 'h ' + m + 'm';
+  if (m > 0) return m + 'm ' + s + 's';
+  return s + 's';
+}
+
+function updateTimers() {
+  document.querySelectorAll('.timer-badge[data-timestamp]').forEach(el => {
+    const ts = parseInt(el.getAttribute('data-timestamp'));
+    if (!ts || isNaN(ts)) return;
+    const ms = Date.now() - ts;
+    el.textContent = '⏱ ' + formatAge(ms);
+    // Update color class based on age
+    const min = ms / 60000;
+    el.className = el.className.replace(/age-\w+/, min < 15 ? 'age-new' : min < 30 ? 'age-warn' : 'age-urgent');
+  });
+}
+
+// Start live timer - updates every second
+setInterval(updateTimers, 1000);
+
+// ── CONFIRM MODAL ────────────────────────────────────────────────────────
+let confirmInterval = null;
+
+function showConfirmModal() {
+  const modal = document.getElementById('confirm-modal');
+  modal.style.display = 'flex';
+  // Keep repeating the alert every 5 seconds until dismissed
+  confirmInterval = setInterval(() => {
+    playAlert();
+  }, 5000);
+}
+
+function dismissConfirm() {
+  const modal = document.getElementById('confirm-modal');
+  modal.style.display = 'none';
+  clearInterval(confirmInterval);
+  confirmInterval = null;
+}
+
+// ── FLASH NOTIFICATION ────────────────────────────────────────────────────
+function showFlash(msg) {
+  const existing = document.querySelector('.new-order-flash');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.className = 'new-order-flash';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+</script>
+</body>
+</html>
