@@ -1022,11 +1022,19 @@ function playAlert() {
       osc.start(ctx.currentTime + delay/1000);
       osc.stop(ctx.currentTime + delay/1000 + 0.25);
     });
-    // Then speak in Spanish after short delay
+    // Then speak in Spanish after short delay - prefer Mexican/Latin American voice
     setTimeout(() => {
       const msg = new SpeechSynthesisUtterance('Nueva orden recibida');
+      const voices = window.speechSynthesis.getVoices();
+      const preferred = ['es-MX', 'es-US', 'es-419', 'es-CO', 'es-GT', 'es-SV'];
+      let selectedVoice = null;
+      for (const code of preferred) {
+        selectedVoice = voices.find(v => v.lang === code);
+        if (selectedVoice) break;
+      }
+      if (selectedVoice) msg.voice = selectedVoice;
       msg.lang = 'es-MX';
-      msg.rate = 0.9;
+      msg.rate = 0.85;
       msg.pitch = 1;
       msg.volume = 1;
       window.speechSynthesis.speak(msg);
