@@ -834,7 +834,7 @@ function renderCards(orders) {
   orders.forEach(order => {
     const ageMin = (order.timestamp && !isNaN(order.timestamp)) ? (Date.now() - order.timestamp) / 60000 : 0;
     const age    = ageMin < 15 ? 'new' : ageMin < 30 ? 'warn' : 'urgent';
-    const ageLabel = ageMin < 1 ? 'Just now' : `${Math.floor(ageMin)}m ago`;
+    const ageLabel = 'Just now'; // will be updated by live timer
 
     const initials = order.customer.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) || '?';
 
@@ -874,7 +874,7 @@ function renderCards(orders) {
           <div class="order-num age-${age}">#${order.orderNum}</div>
           <div class="order-source">TAKE OUT</div>
         </div>
-        <div class="timer-badge age-${age}">⏱ ${ageLabel}</div>
+        <div class="timer-badge age-${age}" data-timestamp="${order.timestamp.getTime ? order.timestamp.getTime() : Date.now()}" id="timer-${order.id}">⏱ ${ageLabel}</div>
       </div>
       <div class="card-body">
         <div class="customer-row">
@@ -934,6 +934,32 @@ function playAlert() {
     });
   } catch(e) {}
 }
+
+// ── LIVE TIMER ───────────────────────────────────────────────────────────
+function formatAge(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return h + 'h ' + m + 'm';
+  if (m > 0) return m + 'm ' + s + 's';
+  return s + 's';
+}
+
+function updateTimers() {
+  document.querySelectorAll('.timer-badge[data-timestamp]').forEach(el => {
+    const ts = parseInt(el.getAttribute('data-timestamp'));
+    if (!ts || isNaN(ts)) return;
+    const ms = Date.now() - ts;
+    el.textContent = '⏱ ' + formatAge(ms);
+    // Update color class based on age
+    const min = ms / 60000;
+    el.className = el.className.replace(/age-\w+/, min < 15 ? 'age-new' : min < 30 ? 'age-warn' : 'age-urgent');
+  });
+}
+
+// Start live timer - updates every second
+setInterval(updateTimers, 1000);
 
 // ── FLASH NOTIFICATION ────────────────────────────────────────────────────
 function showFlash(msg) {
