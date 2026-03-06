@@ -581,6 +581,81 @@
 
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* Confirm notification modal */
+  .confirm-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+    backdrop-filter: blur(6px);
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+  .confirm-box {
+    background: var(--surface);
+    border: 2px solid var(--green-light);
+    border-radius: 20px;
+    padding: 40px 48px;
+    text-align: center;
+    max-width: 380px;
+    width: 90%;
+    box-shadow: 0 0 60px rgba(39,174,96,0.3);
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  @keyframes popIn {
+    from { opacity:0; transform: scale(0.8); }
+    to   { opacity:1; transform: scale(1); }
+  }
+
+  .confirm-icon {
+    font-size: 56px;
+    margin-bottom: 16px;
+    animation: ring 0.6s ease infinite alternate;
+  }
+
+  @keyframes ring {
+    from { transform: rotate(-15deg); }
+    to   { transform: rotate(15deg); }
+  }
+
+  .confirm-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    color: var(--green-light);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .confirm-sub {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 28px;
+  }
+
+  .confirm-btn {
+    background: var(--green-light);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 16px 40px;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+    width: 100%;
+  }
+
+  .confirm-btn:hover { background: #219a52; transform: scale(0.99); }
+  .confirm-btn:active { transform: scale(0.96); }
+
   /* New order flash */
   .new-order-flash {
     position: fixed;
@@ -661,6 +736,16 @@
     </div>
   </div>
 
+</div>
+
+<!-- New Order Confirm Modal -->
+<div class="confirm-overlay" id="confirm-modal" style="display:none;">
+  <div class="confirm-box">
+    <div class="confirm-icon">🔔</div>
+    <div class="confirm-title">Nueva Orden!</div>
+    <div class="confirm-sub">Se ha recibido una nueva orden</div>
+    <button class="confirm-btn" onclick="dismissConfirm()">✓ Confirmar Orden</button>
+  </div>
 </div>
 
 <!-- Loading overlay -->
@@ -805,7 +890,7 @@ async function fetchOrders() {
 
     if (hasNew) {
       playAlert();
-      showFlash(`🔔 New order arrived!`);
+      showConfirmModal();
     }
 
     renderCards(orders);
@@ -924,6 +1009,7 @@ function markDone(orderId, customerName) {
 // ── AUDIO ALERT ───────────────────────────────────────────────────────────
 function playAlert() {
   try {
+    // Play beep first
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     [0, 150, 300].forEach(delay => {
       const osc  = ctx.createOscillator();
@@ -932,11 +1018,20 @@ function playAlert() {
       gain.connect(ctx.destination);
       osc.frequency.value = 880;
       osc.type = 'sine';
-      gain.gain.setValueAtTime(0.3, ctx.currentTime + delay/1000);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay/1000 + 0.2);
+      gain.gain.setValueAtTime(0.4, ctx.currentTime + delay/1000);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay/1000 + 0.25);
       osc.start(ctx.currentTime + delay/1000);
-      osc.stop(ctx.currentTime + delay/1000 + 0.2);
+      osc.stop(ctx.currentTime + delay/1000 + 0.25);
     });
+    // Then speak in Spanish after short delay
+    setTimeout(() => {
+      const msg = new SpeechSynthesisUtterance('Nueva orden recibida');
+      msg.lang = 'es-MX';
+      msg.rate = 0.9;
+      msg.pitch = 1;
+      msg.volume = 1;
+      window.speechSynthesis.speak(msg);
+    }, 500);
   } catch(e) {}
 }
 
@@ -965,6 +1060,25 @@ function updateTimers() {
 
 // Start live timer - updates every second
 setInterval(updateTimers, 1000);
+
+// ── CONFIRM MODAL ────────────────────────────────────────────────────────
+let confirmInterval = null;
+
+function showConfirmModal() {
+  const modal = document.getElementById('confirm-modal');
+  modal.style.display = 'flex';
+  // Keep repeating the alert every 5 seconds until dismissed
+  confirmInterval = setInterval(() => {
+    playAlert();
+  }, 5000);
+}
+
+function dismissConfirm() {
+  const modal = document.getElementById('confirm-modal');
+  modal.style.display = 'none';
+  clearInterval(confirmInterval);
+  confirmInterval = null;
+}
 
 // ── FLASH NOTIFICATION ────────────────────────────────────────────────────
 function showFlash(msg) {
