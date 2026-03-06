@@ -761,7 +761,7 @@ async function fetchOrders() {
       orders.push({
         rowIndex:  i + 1,
         id:        String(orderId),
-        timestamp: r[COL.TIMESTAMP]?.v ? new Date(r[COL.TIMESTAMP].v) : new Date(),
+        timestamp: r[COL.TIMESTAMP]?.v ? new Date(r[COL.TIMESTAMP].f || r[COL.TIMESTAMP].v) : new Date(),
         orderNum:  shortOrderNum,
         customer:  r[COL.CUSTOMER]?.v   || 'Guest',
         phone:     r[COL.PHONE]?.v      || '',
@@ -818,7 +818,7 @@ function renderCards(orders) {
 
   container.innerHTML = '';
   orders.forEach(order => {
-    const ageMin = (Date.now() - order.timestamp) / 60000;
+    const ageMin = (order.timestamp && !isNaN(order.timestamp)) ? (Date.now() - order.timestamp) / 60000 : 0;
     const age    = ageMin < 15 ? 'new' : ageMin < 30 ? 'warn' : 'urgent';
     const ageLabel = ageMin < 1 ? 'Just now' : `${Math.floor(ageMin)}m ago`;
 
