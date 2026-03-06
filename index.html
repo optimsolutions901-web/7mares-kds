@@ -776,6 +776,7 @@ let loggedIn      = false;
 let knownOrders   = new Set();
 let refreshTimer  = null;
 let doneOrders    = new Set(JSON.parse(localStorage.getItem('doneOrders') || '[]'));
+let firstLoad     = true;
 
 // ── LOGIN ─────────────────────────────────────────────────────────────────
 document.getElementById('password').addEventListener('keydown', e => {
@@ -878,14 +879,15 @@ async function fetchOrders() {
       });
     }
 
-    // Detect new orders
+    // Detect new orders - fire on any unseen order after first load
     let hasNew = false;
     orders.forEach(o => {
       if (!knownOrders.has(o.id)) {
-        if (knownOrders.size > 0) hasNew = true;
+        if (!firstLoad) hasNew = true;
         knownOrders.add(o.id);
       }
     });
+    firstLoad = false;
 
     if (hasNew) {
       playAlert();
