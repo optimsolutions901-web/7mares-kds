@@ -740,18 +740,36 @@ async function fetchOrders() {
       const orderId = r[COL.ORDER_NUM]?.v || r[COL.TIMESTAMP]?.v || i;
       if (doneOrders.has(String(orderId))) continue;
 
+      // Shorten order number - last 6 chars
+      const rawOrderNum = r[COL.ORDER_NUM]?.v || '';
+      const shortOrderNum = rawOrderNum ? rawOrderNum.toString().slice(-6).toUpperCase() : '—';
+
+      // Fix time - Google Sheets returns Date(1899,...) for time values
+      const rawTime = r[COL.TIME]?.v || '';
+      let cleanTime = rawTime;
+      if (typeof rawTime === 'string' && rawTime.includes('Date(')) {
+        const parts = rawTime.match(/Date\((\d+),(\d+),(\d+),(\d+),(\d+)/);
+        if (parts) {
+          let h = parseInt(parts[4]);
+          const m = parseInt(parts[5]);
+          const ampm = h >= 12 ? 'PM' : 'AM';
+          h = h % 12 || 12;
+          cleanTime = h + ':' + m.toString().padStart(2,'0') + ' ' + ampm;
+        }
+      }
+
       orders.push({
-        rowIndex:  i + 1, // 1-based for sheet
+        rowIndex:  i + 1,
         id:        String(orderId),
         timestamp: r[COL.TIMESTAMP]?.v ? new Date(r[COL.TIMESTAMP].v) : new Date(),
-        orderNum:  r[COL.ORDER_NUM]?.v  || '—',
+        orderNum:  shortOrderNum,
         customer:  r[COL.CUSTOMER]?.v   || 'Guest',
         phone:     r[COL.PHONE]?.v      || '',
         pickup:    r[COL.PICKUP]?.v     || '',
         items:     r[COL.ITEMS]?.v      || '',
         notes:     r[COL.NOTES]?.v      || '',
         mods:      r[COL.MODS]?.v       || '',
-        time:      r[COL.TIME]?.v       || '',
+        time:      cleanTime,
         date:      r[COL.DATE]?.v       || '',
         status:    status,
       });
