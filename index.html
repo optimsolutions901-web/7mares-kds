@@ -303,6 +303,182 @@
   .pill-warn .pill-dot   { background: #E67E22; }
   .pill-urgent .pill-dot { background: #E74C3C; }
 
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    padding: 0 20px;
+  }
+
+  .tab-btn {
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--text-muted);
+    padding: 14px 20px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+  }
+
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--red); border-bottom-color: var(--red); }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Past orders */
+  .past-orders-container {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .past-order-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr auto;
+    align-items: center;
+    gap: 16px;
+    animation: slideIn 0.3s ease;
+  }
+
+  .past-order-row:hover { border-color: var(--text-muted); }
+
+  .past-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .past-items {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .past-time {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: right;
+  }
+
+  .past-badge {
+    background: rgba(30,132,73,0.15);
+    border: 1px solid rgba(30,132,73,0.3);
+    color: var(--green-light);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  /* Print button */
+  .print-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+  }
+  .print-btn:hover { border-color: var(--green-light); color: var(--green-light); }
+
+  /* Printer settings modal */
+  .printer-modal {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+    backdrop-filter: blur(6px);
+  }
+
+  .printer-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    width: 90%;
+    max-width: 420px;
+  }
+
+  .printer-box h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    color: var(--text);
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+
+  .printer-box p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+  }
+
+  .printer-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    margin-bottom: 12px;
+    outline: none;
+  }
+  .printer-input:focus { border-color: var(--red); }
+
+  .printer-save-btn {
+    width: 100%;
+    background: var(--red);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    margin-bottom: 10px;
+  }
+
+  .printer-cancel-btn {
+    width: 100%;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+  }
+
   /* Cards grid */
   .cards-container {
     padding: 20px;
@@ -727,12 +903,32 @@
     <div class="status-pill pill-urgent"><div class="pill-dot"></div> 30+ min URGENT</div>
   </div>
 
-  <!-- Cards -->
-  <div class="cards-container" id="cards-container">
-    <div class="empty-state">
-      <div class="empty-icon">🍽️</div>
-      <div class="empty-title">No Active Orders</div>
-      <div class="empty-sub">New orders will appear here automatically</div>
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('active')">🟢 Active Orders</button>
+    <button class="tab-btn" onclick="switchTab('past')">📋 Past Orders</button>
+    <button class="tab-btn" onclick="showPrinterSettings()" style="margin-left:auto;">🖨️ Printer</button>
+  </div>
+
+  <!-- Active Orders Tab -->
+  <div class="tab-panel active" id="tab-active">
+    <div class="cards-container" id="cards-container">
+      <div class="empty-state">
+        <div class="empty-icon">🍽️</div>
+        <div class="empty-title">No Active Orders</div>
+        <div class="empty-sub">New orders will appear here automatically</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Past Orders Tab -->
+  <div class="tab-panel" id="tab-past">
+    <div class="past-orders-container" id="past-orders-container">
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title">No Past Orders</div>
+        <div class="empty-sub">Completed orders will appear here</div>
+      </div>
     </div>
   </div>
 
@@ -745,6 +941,19 @@
     <div class="confirm-title">Nueva Orden!</div>
     <div class="confirm-sub">Se ha recibido una nueva orden</div>
     <button class="confirm-btn" onclick="dismissConfirm()">✓ Confirmar Orden</button>
+  </div>
+</div>
+
+<!-- Printer Settings Modal -->
+<div class="printer-modal" id="printer-modal" style="display:none;">
+  <div class="printer-box">
+    <h3>🖨️ Printer Setup</h3>
+    <p>Enter your Epson printer's IP address on your WiFi network. Find it by printing a self-test page on your printer.</p>
+    <input class="printer-input" id="printer-ip" placeholder="e.g. 192.168.1.100" value="">
+    <input class="printer-input" id="printer-port" placeholder="Port (default: 8008)" value="8008">
+    <button class="printer-save-btn" onclick="savePrinterSettings()">Save & Test Connection</button>
+    <button class="printer-cancel-btn" onclick="closePrinterSettings()">Cancel</button>
+    <div id="printer-status" style="margin-top:12px;font-size:12px;color:var(--text-muted);text-align:center;"></div>
   </div>
 </div>
 
@@ -777,6 +986,7 @@ let knownOrders   = new Set();
 let refreshTimer  = null;
 let doneOrders    = new Set(JSON.parse(localStorage.getItem('doneOrders') || '[]'));
 let firstLoad     = true;
+let pastOrders    = JSON.parse(localStorage.getItem('pastOrders') || '[]');
 
 // ── LOGIN ─────────────────────────────────────────────────────────────────
 document.getElementById('password').addEventListener('keydown', e => {
@@ -978,16 +1188,19 @@ function renderCards(orders) {
         ${itemsHtml ? `<div class="section-label">Items</div><div class="items-list">${itemsHtml}</div>` : ''}
         ${notesHtml}
         ${pickupHtml}
-        <button class="done-btn age-${age}" onclick="markDone('${order.id}', '${order.customer}')">
-          ✓ Mark Done
-        </button>
+        <div style="display:flex;gap:8px;">
+          <button class="print-btn" style="padding:13px 16px;font-size:16px;" onclick="currentPrintOrder={customer:'${order.customer}',phone:'${order.phone}',items:'${order.items}',pickup:'${[order.time, order.date].filter(Boolean).join(' ')}'};printTicket(-1)">🖨️</button>
+          <button class="done-btn age-${age}" style="flex:1;" onclick="markDone('${order.id}', '${order.customer}', \`${order.items.replace(/\`/g,'')}\`, '${[order.time, order.date].filter(Boolean).join(' ')}', '${order.phone}')">
+            ✓ Mark Done
+          </button>
+        </div>
       </div>`;
     container.appendChild(card);
   });
 }
 
 // ── MARK ORDER DONE ───────────────────────────────────────────────────────
-function markDone(orderId, customerName) {
+function markDone(orderId, customerName, items, pickupTime, phone) {
   const card = document.getElementById(`card-${orderId}`);
   if (card) {
     card.style.transition = 'all 0.3s ease';
@@ -999,6 +1212,20 @@ function markDone(orderId, customerName) {
   doneOrders.add(String(orderId));
   localStorage.setItem('doneOrders', JSON.stringify([...doneOrders]));
   knownOrders.delete(String(orderId));
+
+  // Save to past orders (keep last 10)
+  const pastEntry = {
+    id: orderId,
+    customer: customerName,
+    items: items,
+    pickup: pickupTime,
+    phone: phone,
+    completedAt: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+  };
+  pastOrders.unshift(pastEntry);
+  if (pastOrders.length > 10) pastOrders = pastOrders.slice(0, 10);
+  localStorage.setItem('pastOrders', JSON.stringify(pastOrders));
+  renderPastOrders();
 
   // Update count
   const countEl = document.getElementById('order-count');
@@ -1088,6 +1315,142 @@ function dismissConfirm() {
   clearInterval(confirmInterval);
   confirmInterval = null;
 }
+
+// ── TAB SWITCHING ────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    if (i === 0) b.classList.toggle('active', tab === 'active');
+    if (i === 1) b.classList.toggle('active', tab === 'past');
+  });
+  document.getElementById('tab-active').classList.toggle('active', tab === 'active');
+  document.getElementById('tab-past').classList.toggle('active', tab === 'past');
+  if (tab === 'past') renderPastOrders();
+}
+
+// ── PAST ORDERS ───────────────────────────────────────────────────────────
+function renderPastOrders() {
+  const container = document.getElementById('past-orders-container');
+  if (pastOrders.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title">No Past Orders</div>
+        <div class="empty-sub">Completed orders will appear here</div>
+      </div>`;
+    return;
+  }
+  container.innerHTML = pastOrders.map((o, i) => `
+    <div class="past-order-row">
+      <div>
+        <div class="past-name">${o.customer}</div>
+        <div style="font-size:11px;color:var(--text-muted)">${o.phone}</div>
+      </div>
+      <div class="past-items">${o.items}</div>
+      <div class="past-time">
+        <div>${o.pickup}</div>
+        <div style="font-size:11px;margin-top:2px;">Done ${o.completedAt}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span class="past-badge">✓ Done</span>
+        <button class="print-btn" onclick="printTicket(${i})">🖨️ Print</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── PRINTER SETTINGS ──────────────────────────────────────────────────────
+function showPrinterSettings() {
+  const saved = localStorage.getItem('printerIP') || '';
+  const savedPort = localStorage.getItem('printerPort') || '8008';
+  document.getElementById('printer-ip').value = saved;
+  document.getElementById('printer-port').value = savedPort;
+  document.getElementById('printer-modal').style.display = 'flex';
+}
+
+function closePrinterSettings() {
+  document.getElementById('printer-modal').style.display = 'none';
+}
+
+function savePrinterSettings() {
+  const ip = document.getElementById('printer-ip').value.trim();
+  const port = document.getElementById('printer-port').value.trim() || '8008';
+  const status = document.getElementById('printer-status');
+  if (!ip) { status.textContent = '⚠ Please enter an IP address'; return; }
+  localStorage.setItem('printerIP', ip);
+  localStorage.setItem('printerPort', port);
+  status.textContent = '✅ Saved! Testing connection...';
+  // Test connection
+  testPrinter(ip, port).then(ok => {
+    status.textContent = ok ? '✅ Printer connected successfully!' : '⚠ Could not reach printer. Check IP and make sure it's on the same WiFi.';
+  });
+}
+
+async function testPrinter(ip, port) {
+  try {
+    const res = await fetch(`http://${ip}:${port}/cgi-bin/epos/service.cgi`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/xml; charset=utf-8', 'SOAPAction': '""' },
+      body: `<?xml version="1.0" encoding="utf-8"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><epos-print xmlns="http://www.epson-pos.com/schemas/2011/03/epos-print"></epos-print></s:Body></s:Envelope>`,
+      signal: AbortSignal.timeout(3000)
+    });
+    return res.ok || res.status === 500;
+  } catch { return false; }
+}
+
+// ── PRINT TICKET ──────────────────────────────────────────────────────────
+function printTicket(index) {
+  const o = index === -1 ? currentPrintOrder : pastOrders[index];
+  if (!o) return;
+  const ip = localStorage.getItem('printerIP');
+  const port = localStorage.getItem('printerPort') || '8008';
+  if (!ip) {
+    showPrinterSettings();
+    showFlash('⚠ Set up printer IP first!');
+    return;
+  }
+  // Build ESC/POS via ePOS SDK
+  const xml = `<?xml version="1.0" encoding="utf-8"?>
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+<s:Body>
+<epos-print xmlns="http://www.epson-pos.com/schemas/2011/03/epos-print">
+  <text align="center" width="2" height="2">7 MARES
+</text>
+  <text align="center">--------------------------------
+</text>
+  <text align="center" bold="true">${o.customer}
+</text>
+  <text align="center">${o.phone}
+</text>
+  <text align="center">--------------------------------
+</text>
+  <text align="left" bold="true">ITEMS:
+</text>
+  <text align="left">${o.items.replace(/,/g, '
+')}
+</text>
+  <text align="center">--------------------------------
+</text>
+  <text align="left" bold="true">PICKUP: ${o.pickup}
+</text>
+  <text align="center">--------------------------------
+</text>
+  <text align="center">${new Date().toLocaleString()}
+</text>
+  <feed line="4"/>
+  <cut type="feed"/>
+</epos-print>
+</s:Body>
+</s:Envelope>`;
+
+  fetch(`http://${ip}:${port}/cgi-bin/epos/service.cgi`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/xml; charset=utf-8', 'SOAPAction': '""' },
+    body: xml
+  }).then(r => {
+    showFlash(r.ok ? '🖨️ Ticket printed!' : '⚠ Print failed - check printer');
+  }).catch(() => showFlash('⚠ Cannot reach printer'));
+}
+
+let currentPrintOrder = null;
 
 // ── FLASH NOTIFICATION ────────────────────────────────────────────────────
 function showFlash(msg) {
