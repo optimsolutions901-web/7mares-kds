@@ -1380,7 +1380,7 @@ function savePrinterSettings() {
   status.textContent = '✅ Saved! Testing connection...';
   // Test connection
   testPrinter(ip, port).then(ok => {
-    status.textContent = ok ? '✅ Printer connected successfully!' : '⚠ Could not reach printer. Check IP and make sure it's on the same WiFi.';
+    status.textContent = ok ? '✅ Printer connected successfully!' : '⚠ Could not reach printer. Check IP and WiFi.';
   });
 }
 
