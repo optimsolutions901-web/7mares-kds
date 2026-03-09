@@ -1404,52 +1404,43 @@ function printTicket(index) {
   const port = localStorage.getItem('printerPort') || '8008';
   if (!ip) {
     showPrinterSettings();
-    showFlash('⚠ Set up printer IP first!');
+    showFlash('Set up printer IP first!');
     return;
   }
-  // Build ESC/POS via ePOS SDK
-  const xml = `<?xml version="1.0" encoding="utf-8"?>
-<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
-<s:Body>
-<epos-print xmlns="http://www.epson-pos.com/schemas/2011/03/epos-print">
-  <text align="center" width="2" height="2">7 MARES
-</text>
-  <text align="center">--------------------------------
-</text>
-  <text align="center" bold="true">${o.customer}
-</text>
-  <text align="center">${o.phone}
-</text>
-  <text align="center">--------------------------------
-</text>
-  <text align="left" bold="true">ITEMS:
-</text>
-  <text align="left">${o.items.replace(/,/g, '
-')}
-</text>
-  <text align="center">--------------------------------
-</text>
-  <text align="left" bold="true">PICKUP: ${o.pickup}
-</text>
-  <text align="center">--------------------------------
-</text>
-  <text align="center">${new Date().toLocaleString()}
-</text>
-  <feed line="4"/>
-  <cut type="feed"/>
-</epos-print>
-</s:Body>
-</s:Envelope>`;
+  const itemsFormatted = o.items.replace(/,/g, ' | ');
+  const xml = [
+    '<?xml version="1.0" encoding="utf-8"?>',
+    '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">',
+    '<s:Body>',
+    '<epos-print xmlns="http://www.epson-pos.com/schemas/2011/03/epos-print">',
+    '<text align="center" width="2" height="2">7 MARES&#10;</text>',
+    '<text align="center">--------------------------------&#10;</text>',
+    '<text align="center" bold="true">' + o.customer + '&#10;</text>',
+    '<text align="center">' + o.phone + '&#10;</text>',
+    '<text align="center">--------------------------------&#10;</text>',
+    '<text align="left" bold="true">ITEMS:&#10;</text>',
+    '<text align="left">' + itemsFormatted + '&#10;</text>',
+    '<text align="center">--------------------------------&#10;</text>',
+    '<text align="left" bold="true">PICKUP: ' + o.pickup + '&#10;</text>',
+    '<text align="center">--------------------------------&#10;</text>',
+    '<text align="center">' + new Date().toLocaleString() + '&#10;</text>',
+    '<feed line="4"/>',
+    '<cut type="feed"/>',
+    '</epos-print>',
+    '</s:Body>',
+    '</s:Envelope>'
+  ].join('');
 
-  fetch(`http://${ip}:${port}/cgi-bin/epos/service.cgi`, {
+  fetch('http://' + ip + ':' + port + '/cgi-bin/epos/service.cgi', {
     method: 'POST',
     headers: { 'Content-Type': 'text/xml; charset=utf-8', 'SOAPAction': '""' },
     body: xml
-  }).then(r => {
-    showFlash(r.ok ? '🖨️ Ticket printed!' : '⚠ Print failed - check printer');
-  }).catch(() => showFlash('⚠ Cannot reach printer'));
+  }).then(function(r) {
+    showFlash(r.ok ? 'Ticket printed!' : 'Print failed - check printer');
+  }).catch(function() {
+    showFlash('Cannot reach printer');
+  });
 }
-
 let currentPrintOrder = null;
 
 // ── FLASH NOTIFICATION ────────────────────────────────────────────────────
